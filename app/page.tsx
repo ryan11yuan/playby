@@ -1,4 +1,4 @@
-'use client'
+ 'use client'
 
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -10,8 +10,11 @@ import { NotificationBanner } from '@/components/notification-banner'
 import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAudioExcitement } from '@/lib/useAudioExcitement'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+  const router = useRouter()
   const [showControls, setShowControls] = useState(false)
   const [alerts, setAlerts] = useState([
     { id: 1, type: 'counterattack', label: 'Counterattack', timestamp: new Date(Date.now() - 120000) },
@@ -19,36 +22,36 @@ export default function Home() {
     { id: 3, type: 'threat', label: 'Box Entry Threat', timestamp: new Date(Date.now() - 240000) },
   ])
   const [currentNotification, setCurrentNotification] = useState<{ id: number; type: string; label: string } | null>(null)
+  const { spike, error: audioError, permissionState } = useAudioExcitement({ sensitivity: 'balanced', cooldownSeconds: 15 })
 
-  // Simulate new alerts coming in
+  // Generate alerts from audio excitement spikes
   useEffect(() => {
-    const interval = setInterval(() => {
-      const alertTypes = [
-        { type: 'counterattack', label: 'Counterattack' },
-        { type: 'set-piece', label: 'Set Piece Building' },
-        { type: 'threat', label: 'Box Entry Threat' },
-        { type: 'goal-attempt', label: 'Goal Attempt' },
-        { type: 'possession', label: 'Possession Change' },
-      ]
-      
-      const randomAlert = alertTypes[Math.floor(Math.random() * alertTypes.length)]
-      const newAlert = { id: Date.now(), ...randomAlert, timestamp: new Date() }
-      
-      setAlerts(prev => [
-        newAlert,
-        ...prev.slice(0, 9), // Keep only last 10 alerts
-      ])
-      
-      setCurrentNotification(newAlert)
-    }, 15000) // New alert every 15 seconds
-
-    return () => clearInterval(interval)
-  }, [])
+    if (!spike) return
+    const newAlert = { id: Date.now(), type: 'threat', label: 'Crowd surge detected', timestamp: new Date() }
+    setAlerts(prev => [newAlert, ...prev.slice(0, 9)])
+    setCurrentNotification(newAlert)
+  }, [spike])
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#000000] via-[#0a0a12] to-[#0f0f1a] animate-[gradient-shift_15s_ease_infinite] bg-[length:200%_200%]" />
+      <div className="absolute inset-0 bg-linear-to-br from-[#000000] via-[#0a0a12] to-[#0f0f1a] animate-[gradient-shift_15s_ease_infinite] bg-size-[200%_200%]" />
       
+      {/* Surface microphone permission or errors */}
+      {permissionState === 'denied' && (
+        <NotificationBanner
+          type="threat"
+          label="Microphone permission denied. Enable mic to detect moments."
+          onDismiss={() => {}}
+        />
+      )}
+      {audioError && permissionState !== 'denied' && (
+        <NotificationBanner
+          type="threat"
+          label="Audio unavailable. Try on https or localhost."
+          onDismiss={() => {}}
+        />
+      )}
+
       {currentNotification && (
         <NotificationBanner
           type={currentNotification.type}
@@ -64,7 +67,8 @@ export default function Home() {
             variant="ghost"
             size="icon"
             className="text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200"
-            onClick={() => window.location.href = '/settings'}
+            aria-label="Settings"
+            onClick={() => router.push('/settings')}
           >
             <Settings className="w-5 h-5" />
           </Button>
