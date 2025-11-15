@@ -1,21 +1,16 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Card } from '@/components/ui/card'
-import { MatchCard } from '@/components/match-card'
 import { AlertFeed } from '@/components/alert-feed'
-import { ControlsPanel } from '@/components/controls-panel'
 import { NotificationBanner } from '@/components/notification-banner'
 import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useVideoAnalyzer } from '@/lib/useVideoAnalyzer'
 import { useRouter } from 'next/navigation'
 import { captureTabVideo } from '@/lib/captureTabVideo'
 
 export default function Home() {
   const router = useRouter()
-  const [showControls, setShowControls] = useState(false)
   const [alerts, setAlerts] = useState([
     { id: 1, type: 'counterattack', label: 'Counterattack', timestamp: new Date(Date.now() - 120000) },
     { id: 2, type: 'set-piece', label: 'Set Piece Building', timestamp: new Date(Date.now() - 180000) },
@@ -62,6 +57,14 @@ export default function Home() {
     setAlerts(prev => [newAlert, ...prev.slice(0, 9)])
     setCurrentNotification(newAlert)
   }, [spike, impact, sensitivityLabel])
+
+  // Hydrate sensitivity from settings (localStorage) so changes on Settings page apply here
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('sensitivityValue')
+      if (saved !== null) setSensitivityValue(Number(saved))
+    } catch {}
+  }, [])
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
@@ -144,26 +147,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Controls Panel Overlay */}
-      <div
-        className={cn(
-          'fixed inset-x-0 bottom-0 z-50 transform transition-transform duration-500 ease-out',
-          showControls ? 'translate-y-0' : 'translate-y-full'
-        )}
-      >
-        <ControlsPanel
-          onClose={() => setShowControls(false)}
-          sensitivityValue={sensitivityValue}
-          onSensitivityChange={setSensitivityValue}
-        />
-      </div>
-
-      <button
-        onClick={() => setShowControls(!showControls)}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white/10 backdrop-blur-xl px-8 py-3.5 rounded-full text-white text-sm font-medium hover:bg-white/15 active:scale-95 transition-all duration-200 shadow-lg border border-white/10"
-      >
-        {showControls ? 'Close' : 'Controls'}
-      </button>
     </div>
   )
 }

@@ -4,10 +4,19 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
 import { ArrowLeft, ChevronRight, Vibrate, Volume2, Bell, Info } from 'lucide-react'
 import { SettingsSheet } from '@/components/settings-sheet'
 
 export default function SettingsPage() {
+  const [sensitivityValue, setSensitivityValue] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('sensitivityValue')
+      return saved !== null ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })
   const [haptics, setHaptics] = useState(true)
   const [audioCues, setAudioCues] = useState(true)
   const [goalAlerts, setGoalAlerts] = useState(true)
@@ -79,10 +88,10 @@ export default function SettingsPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#000000] via-[#0a0a12] to-[#0f0f1a]" />
+      <div className="absolute inset-0 bg-linear-to-br from-[#000000] via-[#0a0a12] to-[#0f0f1a]" />
       
       <div className="relative z-10 min-h-screen">
-        <div className="sticky top-0 z-20 bg-black/60 backdrop-blur-2xl border-b border-white/[0.08]">
+        <div className="sticky top-0 z-20 bg-black/60 backdrop-blur-2xl border-b border-white/8">
           <div className="flex items-center gap-4 p-6 max-w-2xl mx-auto">
             <Button
               variant="ghost"
@@ -103,14 +112,14 @@ export default function SettingsPage() {
                 {section.title}
               </h2>
               
-              <Card className="bg-white/[0.04] backdrop-blur-2xl border-white/[0.08] divide-y divide-white/[0.05] overflow-hidden rounded-2xl">
+              <Card className="bg-white/4 backdrop-blur-2xl border-white/8 divide-y divide-white/5 overflow-hidden rounded-2xl">
                 {section.items.map((item, itemIndex) => {
                   const Icon = item.icon
                   
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center gap-4 p-5 hover:bg-white/[0.05] active:bg-white/[0.08] transition-colors"
+                      className="flex items-center gap-4 p-5 hover:bg-white/5 active:bg-white/8 transition-colors"
                     >
                       <div className="text-blue-400">
                         <Icon className="w-5 h-5" strokeWidth={2} />
@@ -136,15 +145,61 @@ export default function SettingsPage() {
             </div>
           ))}
 
+          {/* Inline Detection Controls (no popup) */}
+          <div className="space-y-4">
+            <h2 className="text-white/50 text-xs font-semibold uppercase tracking-widest px-1">
+              Detection Controls
+            </h2>
+            <Card className="bg-white/4 backdrop-blur-2xl border-white/8 overflow-hidden rounded-2xl p-6">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <label className="text-white/70 font-medium text-sm">Sensitivity</label>
+                  <span className="text-blue-400 font-bold text-sm">
+                    {sensitivityValue < 33 ? 'Conservative' : sensitivityValue < 66 ? 'Balanced' : 'Aggressive'}
+                  </span>
+                </div>
+                <Slider
+                  value={[sensitivityValue]}
+                  onValueChange={(vals) => {
+                    const v = vals[0]
+                    setSensitivityValue(v)
+                    try { localStorage.setItem('sensitivityValue', String(v)) } catch {}
+                  }}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-white/40 font-medium px-1">
+                  <span>Conservative</span>
+                  <span>Balanced</span>
+                  <span>Aggressive</span>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    onClick={() => {
+                      // 10 min silence placeholder; in future, wire to a global mute flag
+                      const until = Date.now() + 10 * 60 * 1000
+                      try { localStorage.setItem('silenceUntil', String(until)) } catch {}
+                    }}
+                    className="w-full py-6 text-sm font-semibold rounded-2xl transition-all duration-200 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30"
+                  >
+                    Silence for 10 min
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           <div className="space-y-4">
             <h2 className="text-white/50 text-xs font-semibold uppercase tracking-widest px-1">
               About
             </h2>
             
-            <Card className="bg-white/[0.04] backdrop-blur-2xl border-white/[0.08] rounded-2xl overflow-hidden">
+            <Card className="bg-white/4 backdrop-blur-2xl border-white/8 rounded-2xl overflow-hidden">
               <button
                 onClick={() => setActiveSheet('about')}
-                className="w-full flex items-center gap-4 p-5 hover:bg-white/[0.05] active:bg-white/[0.08] transition-colors"
+                className="w-full flex items-center gap-4 p-5 hover:bg-white/5 active:bg-white/8 transition-colors"
               >
                 <div className="text-blue-400">
                   <Info className="w-5 h-5" strokeWidth={2} />
@@ -167,6 +222,7 @@ export default function SettingsPage() {
         onClose={() => setActiveSheet(null)}
         settingId={activeSheet}
       />
+
     </div>
   )
 }
