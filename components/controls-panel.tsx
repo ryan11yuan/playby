@@ -1,6 +1,5 @@
 'use client'
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -8,12 +7,18 @@ import { X } from 'lucide-react'
 
 interface ControlsPanelProps {
   onClose: () => void
+  sensitivityValue: number
+  onSensitivityChange: (value: number) => void
 }
 
-export function ControlsPanel({ onClose }: ControlsPanelProps) {
-  const [sensitivity, setSensitivity] = useState([50])
+export function ControlsPanel({ onClose, sensitivityValue, onSensitivityChange }: ControlsPanelProps) {
+  const [internalSlider, setInternalSlider] = useState([sensitivityValue])
   const [isSilenced, setIsSilenced] = useState(false)
   const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null)
+
+  useEffect(() => {
+    setInternalSlider([sensitivityValue])
+  }, [sensitivityValue])
 
   const handleSilence = () => {
     setIsSilenced(true)
@@ -44,7 +49,7 @@ export function ControlsPanel({ onClose }: ControlsPanelProps) {
   }
 
   return (
-    <div className="bg-black/40 backdrop-blur-2xl border-t border-white/[0.08] shadow-2xl">
+    <div className="bg-black/40 backdrop-blur-2xl border-t border-white/8 shadow-2xl">
       <Card className="bg-transparent border-0 shadow-none p-8 space-y-8 max-w-lg mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -64,13 +69,18 @@ export function ControlsPanel({ onClose }: ControlsPanelProps) {
           <div className="flex items-center justify-between">
             <label className="text-white/60 font-medium text-sm">Sensitivity</label>
             <span className="text-blue-400 font-bold text-sm">
-              {getSensitivityLabel(sensitivity[0])}
+              {getSensitivityLabel(internalSlider[0])}
             </span>
           </div>
           
           <Slider
-            value={sensitivity}
-            onValueChange={setSensitivity}
+            value={internalSlider}
+            onValueChange={(vals) => {
+              setInternalSlider(vals)
+              if (vals[0] !== sensitivityValue) {
+                onSensitivityChange(vals[0])
+              }
+            }}
             max={100}
             step={1}
             className="w-full"
